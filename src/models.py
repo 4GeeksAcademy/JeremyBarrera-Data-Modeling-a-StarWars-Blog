@@ -1,86 +1,89 @@
+
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String, Enum
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
+import enum
+from flask_sqlalchemy import SQLAlchemy
 
-Base = declarative_base()
+db = SQLAlchemy()
 
-class Follower(Base):
+class MediaType(enum.Enum):
+    image = "image"
+    video = "video"
+
+class Follower(db.Model):
     __tablename__ = 'follower'
-    user_from_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
-    user_to_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    user_from_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    user_to_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'user'
-    id = Column(Integer, primary_key=True)
-    username = Column(String(50), unique=True, nullable=False)
-    firstname = Column(String(50))
-    lastname = Column(String(50))
-    email = Column(String(100), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    firstname = db.Column(db.String(50))
+    lastname = db.Column(db.String(50))
+    email = db.Column(db.String(100), unique=True, nullable=False)
 
-    posts = relationship('Post', back_populates='user')
-    comments = relationship('Comment', back_populates='author')
-    followers = relationship('Follower', foreign_keys=[Follower.user_to_id], backref='followed')
-    following = relationship('Follower', foreign_keys=[Follower.user_from_id], backref='follower')
+    posts = db.relationship('Post', back_populates='user')
+    comments = db.relationship('Comment', back_populates='author')
+    followers = db.relationship('Follower', foreign_keys=[Follower.user_to_id], backref='followed')
+    following = db.relationship('Follower', foreign_keys=[Follower.user_from_id], backref='follower')
 
-class Post(Base):
+class Post(db.Model):
     __tablename__ = 'post'
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
-    user = relationship('User', back_populates='posts')
-    comments = relationship('Comment', back_populates='post')
-    media = relationship('Media', back_populates='post')
+    user = db.relationship('User', back_populates='posts')
+    comments = db.relationship('Comment', back_populates='post')
+    media = db.relationship('Media', back_populates='post')
 
-class Comment(Base):
+class Comment(db.Model):
     __tablename__ = 'comment'
-    id = Column(Integer, primary_key=True)
-    comment_text = Column(String(500))
-    author_id = Column(Integer, ForeignKey('user.id'))
-    post_id = Column(Integer, ForeignKey('post.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    comment_text = db.Column(db.String(500))
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
 
-    author = relationship('User', back_populates='comments')
-    post = relationship('Post', back_populates='comments')
+    author = db.relationship('User', back_populates='comments')
+    post = db.relationship('Post', back_populates='comments')
 
-class Media(Base):
+class Media(db.Model):
     __tablename__ = 'media'
-    id = Column(Integer, primary_key=True)
-    type = Column(Enum('image', 'video', name='media_type'))
-    url = Column(String(250))
-    post_id = Column(Integer, ForeignKey('post.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.Enum(MediaType))
+    url = db.Column(db.String(250))
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
 
-    post = relationship('Post', back_populates='media')
+    post = db.relationship('Post', back_populates='media')
 
-class Character(Base):
+class Character(db.Model):
     __tablename__ = 'character'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-    gender = Column(String(20))
-    birth_year = Column(String(20))
-    eye_color = Column(String(20))
-    height = Column(String(20))
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    gender = db.Column(db.String(20))
+    birth_year = db.Column(db.String(20))
+    eye_color = db.Column(db.String(20))
+    height = db.Column(db.String(20))
 
-    favorites = relationship('Favorite', back_populates='character')
+    favorites = db.relationship('Favorite', back_populates='character')
 
-class Planet(Base):
+class Planet(db.Model):
     __tablename__ = 'planet'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-    climate = Column(String(50))
-    terrain = Column(String(50))
-    population = Column(String(50))
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    climate = db.Column(db.String(50))
+    terrain = db.Column(db.String(50))
+    population = db.Column(db.String(50))
 
-    favorites = relationship('Favorite', back_populates='planet')
+    favorites = db.relationship('Favorite', back_populates='planet')
 
-class Favorite(Base):
+class Favorite(db.Model):
     __tablename__ = 'favorite'
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
-    character_id = Column(Integer, ForeignKey('character.id'), nullable=True)
-    planet_id = Column(Integer, ForeignKey('planet.id'), nullable=True)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=True)
+    planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=True)
 
-    user = relationship('User')
-    character = relationship('Character', back_populates='favorites')
-    planet = relationship('Planet', back_populates='favorites')
+    user = db.relationship('User')
+    character = db.relationship('Character', back_populates='favorites')
+    planet = db.relationship('Planet', back_populates='favorites')
